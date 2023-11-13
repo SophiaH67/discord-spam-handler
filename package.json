@@ -1,0 +1,17 @@
+{
+  "name": "discord-spam-handler",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js-selfbot-v13": "^2.15.0"
+  },
+  "scripts": {
+    "start:dev": "nodemon --ignore 'data/*' src/index.ts"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
