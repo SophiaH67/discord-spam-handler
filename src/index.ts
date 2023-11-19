@@ -1,5 +1,6 @@
 import { Client } from "discord.js-selfbot-v13";
 import { SpamUsers } from "./spamUsers";
+import { CrazyTextGenerator } from "./text/CrazyTextGenerator";
 
 const client = new Client({
   // See other options here
@@ -12,8 +13,6 @@ client.on("ready", async () => {
 });
 
 const responses = [
-  "Hiiiii",
-  "Hello?",
   "Crazy?",
   "I was crazy once!",
   "They locked me in a room.",
@@ -29,7 +28,16 @@ const responses = [
  * If the timeout is over, delete the entry from the map.
  */
 const timeoutMap = new Map<string, NodeJS.Timeout>();
-const indexMap = new Map<string, number>();
+
+const textGenerator = new CrazyTextGenerator();
+
+function waitUntil(time: Date) {
+  return new Promise((resolve) => {
+    const now = Date.now();
+    const timeDiff = time.getTime() - now;
+    setTimeout(resolve, timeDiff);
+  });
+}
 
 client.on("messageCreate", async (message) => {
   // Hacky "command" handling so you can add or remove users from the spam list
@@ -60,6 +68,9 @@ client.on("messageCreate", async (message) => {
   const spamUsers = SpamUsers.Instance;
   if (!spamUsers.has(message.channel.id)) return;
 
+  // Mark channel as read
+  void message.markRead(); // Can do it somewhere in the background
+
   const timeout = timeoutMap.get(message.channel.id);
 
   if (timeout) {
@@ -71,17 +82,19 @@ client.on("messageCreate", async (message) => {
   const time = 1000; // Math.floor(Math.random() * 295000) + 5000;
 
   const newTimeout = setTimeout(async () => {
-    const index = indexMap.get(message.channel.id) ?? 0;
-    const response = responses[index];
-    await message.channel.sendTyping();
-    // Wait 2-8 seconds before sending the response
-    await new Promise((r) =>
-      setTimeout(r, Math.floor(Math.random() * 6000) + 2000)
-    );
+    const startTime = Date.now();
+    const sendTime = startTime + Math.floor(Math.random() * 6000) + 2000; // 2-8 seconds after start time
+    const typingP = message.channel.sendTyping();
+    const responseP = textGenerator.generate(message.channel.id);
+    const [_typing, response] = await Promise.all([typingP, responseP]);
+
+    // Wait until the send time
+    await waitUntil(new Date(sendTime));
+
     // Send the response
     await message.channel.send(response);
-    // Increment and cleanup
-    indexMap.set(message.channel.id, index + 1);
+
+    // Clean up the timeout
     timeoutMap.delete(message.channel.id);
   }, time);
 
