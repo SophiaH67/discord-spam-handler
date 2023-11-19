@@ -37,18 +37,25 @@ client.on("messageCreate", async (message) => {
     message.author.id === client.user!.id
   ) {
     const args = message.content.split(" ");
-    console.log("args", args);
-    if (args.length !== 3) return;
+    if (args.length !== 3) {
+      await message.react("3️⃣");
+      return;
+    }
     const action = args[1];
     const channel = args[2];
     if (action === "add") {
+      if (SpamUsers.Instance.has(channel)) {
+        await message.react("🤨");
+        return;
+      }
+
       SpamUsers.Instance.add(channel);
       await message.react("👍");
     } else if (action === "remove") {
       SpamUsers.Instance.remove(channel);
       await message.react("👍");
     } else {
-      console.log("idk what to do with", action);
+      await message.react("🤷‍♀️");
     }
     return;
   }
