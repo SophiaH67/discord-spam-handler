@@ -12,15 +12,6 @@ client.on("ready", async () => {
   console.log(`${client.user!.username} is ready!`);
 });
 
-const responses = [
-  "Crazy?",
-  "I was crazy once!",
-  "They locked me in a room.",
-  "A rubber room.",
-  "A rubber room with rats.",
-  "And rats make me crazy.",
-];
-
 /**
  * Map of user ID's mapped to timeouts of when to send a "response" to them.
  * Pick the next response from the array of responses.
