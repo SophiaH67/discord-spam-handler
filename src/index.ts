@@ -91,7 +91,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // Random time between 5 seconds and 5 minutes
-  const time = 1000; // Math.floor(Math.random() * 295000) + 5000;
+  const time = Math.floor(Math.random() * 295000) + 5000;
 
   const newTimeout = setTimeout(async () => {
     const startTime = Date.now();
