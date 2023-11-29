@@ -1,13 +1,14 @@
 import { writeFile } from "fs/promises";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import type { ClassKey } from "src";
 
 const spamUsersPath = join(__dirname, "../data/spamUsers.json");
 
 export class SpamUsers {
   private static instance: SpamUsers;
 
-  private spamUsers: string[] = []; // Channel IDs
+  private spamUsers: Record<string, ClassKey> = {}; // channelId -> class key
 
   static get Instance() {
     return this.instance || (this.instance = new this());
@@ -20,7 +21,16 @@ export class SpamUsers {
   private load() {
     if (existsSync(spamUsersPath)) {
       const file = readFileSync(spamUsersPath, "utf-8");
-      this.spamUsers = JSON.parse(file);
+      const json = JSON.parse(file);
+      if (Array.isArray(json)) {
+        // Old format
+        for (const channelId of json) {
+          this.spamUsers[channelId] = "crazy";
+        }
+        this.save();
+      } else {
+        this.spamUsers = json;
+      }
     }
   }
 
@@ -28,22 +38,21 @@ export class SpamUsers {
     writeFile(spamUsersPath, JSON.stringify(this.spamUsers));
   }
 
-  public add(id: string) {
-    if (!this.spamUsers.includes(id)) {
-      this.spamUsers.push(id);
-      this.save();
-    }
+  public add(id: string, classKey: ClassKey) {
+    this.spamUsers[id] = classKey;
+    this.save();
   }
 
   public remove(id: string) {
-    const index = this.spamUsers.indexOf(id);
-    if (index !== -1) {
-      this.spamUsers.splice(index, 1);
-      this.save();
-    }
+    delete this.spamUsers[id];
+    this.save();
   }
 
   public has(id: string) {
-    return this.spamUsers.includes(id);
+    return id in this.spamUsers;
+  }
+
+  public get(id: string) {
+    return this.spamUsers[id];
   }
 }

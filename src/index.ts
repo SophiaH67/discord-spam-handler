@@ -1,6 +1,9 @@
+import "dotenv/config";
+
 import { Client } from "discord.js-selfbot-v13";
 import { SpamUsers } from "./spamUsers";
 import { CrazyTextGenerator } from "./text/CrazyTextGenerator";
+import { OpenAiTextGenerator } from "./text/OpenAiTextGenerator";
 
 const client = new Client({
   // See other options here
@@ -20,7 +23,12 @@ client.on("ready", async () => {
  */
 const timeoutMap = new Map<string, NodeJS.Timeout>();
 
-const textGenerator = new CrazyTextGenerator();
+const textGenerators = {
+  crazy: new CrazyTextGenerator(),
+  openai: new OpenAiTextGenerator(),
+};
+
+export type ClassKey = keyof typeof textGenerators;
 
 function waitUntil(time: Date) {
   return new Promise((resolve) => {
@@ -37,19 +45,25 @@ client.on("messageCreate", async (message) => {
     message.author.id === client.user!.id
   ) {
     const args = message.content.split(" ");
-    if (args.length !== 3) {
+    if (args.length < 3) {
       await message.react("3️⃣");
       return;
     }
     const action = args[1];
     const channel = args[2];
+    const classKey = (args[3] as ClassKey) ?? ("openai" as const);
+    if (!Object.keys(textGenerators).includes(classKey)) {
+      await message.react("🔑");
+      return;
+    }
+
     if (action === "add") {
       if (SpamUsers.Instance.has(channel)) {
         await message.react("🤨");
         return;
       }
 
-      SpamUsers.Instance.add(channel);
+      SpamUsers.Instance.add(channel, classKey);
       await message.react("👍");
     } else if (action === "remove") {
       SpamUsers.Instance.remove(channel);
@@ -83,7 +97,8 @@ client.on("messageCreate", async (message) => {
     const startTime = Date.now();
     const sendTime = startTime + Math.floor(Math.random() * 6000) + 2000; // 2-8 seconds after start time
     const typingP = message.channel.sendTyping();
-    const responseP = textGenerator.generate(message.channel.id);
+    const textGenerator = textGenerators[spamUsers.get(message.channel.id)!];
+    const responseP = textGenerator.generate(message.channel.id, client);
     const [_typing, response] = await Promise.all([typingP, responseP]);
 
     // Wait until the send time
